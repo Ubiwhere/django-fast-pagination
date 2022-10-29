@@ -36,7 +36,7 @@ Optionally, you can define some settings:
 # Configuration for Fast Pagination (all fields are optional)
 FAST_PAGINATION = {
     # The url that should used when rendering an example
-    # response (don't forgot the '?' at the end)
+    # response
     "BASE_RESPONSE_URL": "https://ubiwhere.com/api/resource/?",
     # The number of items per page
     "PAGE_SIZE": 100,

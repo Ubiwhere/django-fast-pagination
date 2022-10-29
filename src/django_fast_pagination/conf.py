@@ -31,6 +31,20 @@ class Settings:
     # requested from the API in a single page.
     MAX_PAGE_SIZE: Optional[int] = 9000
 
+    # Derived setting of BASE_RESPONSE_URL and PAGE_SIZE_QUERY_PARAM
+    EXAMPLE_URL: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        """
+        Builds the EXAMPLE_URL for the API response schema.
+        """
+        # Add "?" query param indicator at end of base url
+        # in case the user forgot it
+        if not self.BASE_RESPONSE_URL.endswith("?"):
+            self.BASE_RESPONSE_URL += "?"
+        # merge response url and page size query parameter
+        self.EXAMPLE_URL = f"{self.BASE_RESPONSE_URL}{self.PAGE_SIZE_QUERY_PARAM}"
+
 
 # Get fast pagination config from django
 __configs = getattr(django_settings, "FAST_PAGINATION", {})
