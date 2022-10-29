@@ -5,6 +5,7 @@ import sys
 
 from django.utils.functional import cached_property
 from django.core.paginator import Paginator
+from django.template import loader
 
 # Import "slow" pagination class as double underscore to avoid confusion
 # when importing our own pagination class
@@ -45,6 +46,8 @@ class FastPageNumberPagination(__):
     page_size = settings.PAGE_SIZE
     page_size_query_param = settings.PAGE_SIZE_QUERY_PARAM
     max_page_size = settings.MAX_PAGE_SIZE
+    # use template without page numbers for django rest browseable API
+    template = "rest_framework/pagination/previous_and_next.html"
 
     def get_paginated_response(self, data):
         return Response(
@@ -82,4 +85,15 @@ class FastPageNumberPagination(__):
                 },
                 "results": schema,
             },
+        }
+
+    def to_html(self):
+        template = loader.get_template(self.template)
+        context = self.get_html_context()
+        return template.render(context)
+
+    def get_html_context(self):
+        return {
+            "previous_url": self.get_previous_link(),
+            "next_url": self.get_next_link(),
         }
