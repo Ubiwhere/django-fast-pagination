@@ -25,6 +25,7 @@ or per-view basis:
 ```python
 from rest_framework import viewsets
 from django_fast_pagination import FastPageNumberPagination
+
 class FooViewSet(viewsets.ModelViewSet):
     pagination_class = FastPageNumberPagination
 ```
@@ -56,5 +57,8 @@ This package works by "patching" the Django's paginator class `count` method, wi
 a very large number (`sys.maxsize`), thus avoiding the database count query, that can
 have a very large performance drag on high volume databases. The only caveat is that your
 browseable API will show the following:
+
+<img width="451" alt="Screenshot 2022-10-29 at 01 57 04" src="https://user-images.githubusercontent.com/49190578/198754872-75f216c4-6df6-43e1-8b9a-fa9cd8907087.png">
+
 
 **Alternative**: Alternatively, you can use Django Rest built-in `CursorPagination` that will achieve a similar result as this package. However, it requires a more complex setup. Refer to the [documentation](https://www.django-rest-framework.org/api-guide/pagination/#cursorpagination) for more information.
