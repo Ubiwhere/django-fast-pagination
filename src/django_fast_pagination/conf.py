@@ -43,7 +43,9 @@ class Settings:
         if not self.BASE_RESPONSE_URL.endswith("?"):
             self.BASE_RESPONSE_URL += "?"
         # merge response url and page size query parameter
-        self.EXAMPLE_URL = f"{self.BASE_RESPONSE_URL}{self.PAGE_SIZE_QUERY_PARAM}"
+        self.EXAMPLE_URL = (
+            f"{self.BASE_RESPONSE_URL}{self.PAGE_SIZE_QUERY_PARAM}={self.PAGE_SIZE}"
+        )
 
 
 # Get fast pagination config from django
