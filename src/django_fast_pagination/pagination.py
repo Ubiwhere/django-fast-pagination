@@ -97,3 +97,11 @@ class FastPageNumberPagination(__):
             "previous_url": self.get_previous_link(),
             "next_url": self.get_next_link(),
         }
+
+    def paginate_queryset(self, queryset, request, view):
+        qs = super().paginate_queryset(queryset, request, view)
+        # If queryset returned empty make sure we dont render any
+        # next link. We already ran out of data
+        if not qs:
+            self.page.has_next = lambda: False
+        return qs
