@@ -3,9 +3,8 @@ Module with custom pagination object
 """
 import sys
 
-from django.utils.functional import cached_property
-from django.core.paginator import Paginator
-from django.template import loader
+from django.core.paginator import InvalidPage, Paginator
+from rest_framework.exceptions import NotFound
 
 # Import "slow" pagination class as double underscore to avoid confusion
 # when importing our own pagination class
@@ -19,6 +18,10 @@ from django_fast_pagination.conf import settings
 __all__ = ["FastPageNumberPagination"]
 
 
+def get_show_count_from_request(request) -> bool:
+    return request.query_params.get("show_count", "False").lower() == "true"
+
+
 class NoCountQuery(Paginator):
     """
     Django default Paginator makes a `.count()`
@@ -29,8 +32,18 @@ class NoCountQuery(Paginator):
     the database query, reducing queries time by +99%.
     """
 
-    @cached_property
+    def __init__(self, *args, **kwargs) -> None:
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+    @property
     def count(self) -> int:
+        """If `show_count` query parameter is true, an actual count
+        is performed. Otherwise (default behavior), we patch the count
+        with `sys.maxsize`."""
+        show_count: bool = get_show_count_from_request(self.request)
+        if show_count:
+            return super().count
         return sys.maxsize
 
 
@@ -50,14 +63,20 @@ class FastPageNumberPagination(__):
     template = "rest_framework/pagination/previous_and_next.html"
 
     def get_paginated_response(self, data):
-        return Response(
-            {
-                "current_page": self.page.number,
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-                "results": data,
-            }
-        )
+        # Check if the response should include counting or not
+        show_count: bool = get_show_count_from_request(self.request)
+        if show_count:
+            response = {"count": self.page.paginator.count}
+        else:
+            response = {}
+        # Add the common response
+        response |= {
+            "current_page": self.page.number,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "results": data,
+        }
+        return Response(response)
 
     def get_paginated_response_schema(self, schema):
         """
@@ -87,19 +106,38 @@ class FastPageNumberPagination(__):
             },
         }
 
-    def to_html(self):
-        template = loader.get_template(self.template)
-        context = self.get_html_context()
-        return template.render(context)
-
     def get_html_context(self):
+        """Specify the needed context for
+        "rest_framework/pagination/previous_and_next.html" template rendering."""
         return {
             "previous_url": self.get_previous_link(),
             "next_url": self.get_next_link(),
         }
 
     def paginate_queryset(self, queryset, request, view):
-        qs = super().paginate_queryset(queryset, request, view)
+        page_size = self.get_page_size(request)
+        if not page_size:
+            return None
+
+        # This is where the code differs from the original. We instantiate
+        # paginator class with an extra argument to pass the "request" object.
+        paginator = self.django_paginator_class(queryset, page_size, request=request)
+        page_number = self.get_page_number(request, paginator)
+
+        try:
+            self.page = paginator.page(page_number)
+        except InvalidPage as exc:
+            msg = self.invalid_page_message.format(
+                page_number=page_number, message=str(exc)
+            )
+            raise NotFound(msg)
+
+        if paginator.num_pages > 1 and self.template is not None:
+            # The browsable API should display pagination controls.
+            self.display_page_controls = True
+
+        self.request = request
+        qs = list(self.page)
         # If queryset returned empty make sure we dont render any
         # next link. We already ran out of data
         if not qs:
