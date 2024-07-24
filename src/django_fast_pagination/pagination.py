@@ -2,6 +2,7 @@
 Module with custom pagination object
 """
 import sys
+from django.utils.encoding import force_str
 
 from django.core.paginator import InvalidPage, Paginator
 from rest_framework.exceptions import NotFound
@@ -77,6 +78,42 @@ class FastPageNumberPagination(__):
             "results": data,
         }
         return Response(response)
+
+    def get_schema_operation_parameters(self, view):
+        parameters = [
+            {
+                "name": self.page_query_param,
+                "required": False,
+                "in": "query",
+                "description": force_str(self.page_query_description),
+                "schema": {
+                    "type": "integer",
+                },
+            },
+            {
+                "name": "show_count",
+                "required": False,
+                "in": "query",
+                "description": "Show count of total items",
+                "schema": {
+                    "type": "boolean",
+                },
+            },
+        ]
+        if self.page_size_query_param is not None:
+            parameters.append(
+                {
+                    "name": self.page_size_query_param,
+                    "required": False,
+                    "in": "query",
+                    "description": force_str(self.page_size_query_description),
+                    "schema": {
+                        "type": "integer",
+                    },
+                },
+            )
+        return parameters
+
 
     def get_paginated_response_schema(self, schema):
         """
