@@ -1,11 +1,12 @@
 """
 Module with custom pagination object
 """
+
 import sys
 
 from django.core.paginator import InvalidPage, Paginator
+from django.utils.encoding import force_str
 from rest_framework.exceptions import NotFound
-
 # Import "slow" pagination class as double underscore to avoid confusion
 # when importing our own pagination class
 from rest_framework.pagination import PageNumberPagination as __
@@ -77,6 +78,41 @@ class FastPageNumberPagination(__):
             "results": data,
         }
         return Response(response)
+
+    def get_schema_operation_parameters(self, view):
+        parameters = [
+            {
+                "name": self.page_query_param,
+                "required": False,
+                "in": "query",
+                "description": force_str(self.page_query_description),
+                "schema": {
+                    "type": "integer",
+                },
+            },
+            {
+                "name": "show_count",
+                "required": False,
+                "in": "query",
+                "description": "Show count of total items",
+                "schema": {
+                    "type": "boolean",
+                },
+            },
+        ]
+        if self.page_size_query_param is not None:
+            parameters.append(
+                {
+                    "name": self.page_size_query_param,
+                    "required": False,
+                    "in": "query",
+                    "description": force_str(self.page_size_query_description),
+                    "schema": {
+                        "type": "integer",
+                    },
+                },
+            )
+        return parameters
 
     def get_paginated_response_schema(self, schema):
         """
