@@ -1,12 +1,12 @@
 """
 Module with custom pagination object
 """
+
 import sys
-from django.utils.encoding import force_str
 
 from django.core.paginator import InvalidPage, Paginator
+from django.utils.encoding import force_str
 from rest_framework.exceptions import NotFound
-
 # Import "slow" pagination class as double underscore to avoid confusion
 # when importing our own pagination class
 from rest_framework.pagination import PageNumberPagination as __
@@ -113,7 +113,6 @@ class FastPageNumberPagination(__):
                 },
             )
         return parameters
-
 
     def get_paginated_response_schema(self, schema):
         """
